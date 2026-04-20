@@ -965,7 +965,7 @@
 	<script type="module">
 		// Registration is handled directly by Apps Script (Google Sheet + Google Drive).
 
-		const DRIVE_UPLOAD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxewjmuM01HQXOwajNdZUBxsHcILbUloN7IwSoejfUqvL3daF70hkI5U6ls9AnLFpEl-g/exec';
+		const DRIVE_UPLOAD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz7uMtLX3401h-2P_VY74rH4cl3GWHTAVe1KKARXDyHYpIYYAGY50ZOgGZKTIvYtXvEzA/exec';
 		const DRIVE_FOLDER_IDS = {
 			waProof: '1sHp0O2wQEWy2npOy9wBlyOY74D_smL0H',
 			followProof: '11ba8IGAR8FWBB6mN4FyMoWzMAhJGhTJh'
@@ -1264,47 +1264,45 @@
 		}
 
 		async function sendRegistrationToSheet(registrationData) {
-			try {
-				const waProofUrls = Array.isArray(registrationData.waProof)
-					? registrationData.waProof.map((item) => item.url || '')
-					: [];
-				const followProofUrls = Array.isArray(registrationData.followProof)
-					? registrationData.followProof.map((item) => item.url || '')
-					: [];
+			const waProofUrls = Array.isArray(registrationData.waProof)
+				? registrationData.waProof.map((item) => item.url || '')
+				: [];
+			const followProofUrls = Array.isArray(registrationData.followProof)
+				? registrationData.followProof.map((item) => item.url || '')
+				: [];
 
-				const response = await fetch(DRIVE_UPLOAD_ENDPOINT, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'text/plain;charset=utf-8'
-					},
-					body: JSON.stringify({
-						registeredAt: registrationData.timestamp,
-						studentId: registrationData.uid,
-						name: registrationData.nama,
-						email: registrationData.email,
-						whatsapp: registrationData.whatsapp,
-						instagram: registrationData.instagram,
-						institution: registrationData.instansi,
-						major: registrationData.jurusan,
-						academicStatus: registrationData.status,
-						role: 'student',
-						waProofUrls,
-						followProofUrls,
-						registrationData
-					})
-				});
+			const response = await fetch(DRIVE_UPLOAD_ENDPOINT, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'text/plain;charset=utf-8'
+				},
+				body: JSON.stringify({
+					registeredAt: registrationData.timestamp,
+					studentId: registrationData.uid,
+					name: registrationData.nama,
+					email: registrationData.email,
+					whatsapp: registrationData.whatsapp,
+					instagram: registrationData.instagram,
+					institution: registrationData.instansi,
+					major: registrationData.jurusan,
+					academicStatus: registrationData.status,
+					role: 'student',
+					waProofUrls,
+					followProofUrls,
+					registrationData
+				})
+			});
 
-				if (!response.ok) {
-					console.warn('Failed to send registration to sheet:', response.statusText);
-					return false;
-				}
-
-				const result = await response.json();
-				return result.ok === true;
-			} catch (err) {
-				console.warn('Error sending registration to sheet:', err.message);
-				return false;
+			if (!response.ok) {
+				throw new Error(`Gagal kirim data ke spreadsheet (HTTP ${response.status}).`);
 			}
+
+			const result = await response.json();
+			if (!result.ok) {
+				throw new Error(result.message || 'Gagal menyimpan data ke spreadsheet.');
+			}
+
+			return true;
 		}
 
 		function syncPreview() {
@@ -1503,7 +1501,7 @@
 					return;
 				}
 
-				if (error.message && error.message.includes('permission')) {
+				if (error.message && error.message.toLowerCase().includes('permission')) {
 					showToast('Gagal menyimpan data. Hubungi admin jika masalah berlanjut.');
 					return;
 				}
